@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Artificial</title>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <canvas id="resultado"></canvas>
+
+    <script type="text/javascript">
+    
+    var image = new Image();
+    image.onload = imagenLoaded;
+    image.src = 'imagen.jpg'
+
+    function imagenLoaded() {
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+
+        canvas.width = 800;
+        canvas.height = 650;
+        console.log("canvas", canvas)
+
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        blancoYNegro(canvas);
+
+        var resultado = document.getElementById("resultado");
+        convolucionar(canvas, resultado);
+    }
+
+    function blancoYNegro(canvas) {
+        var ctx = canvas.getContext("2d");
+        var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var pixeles = imgData.data;
+
+        for (var i = 0; i < pixeles.length; i += 4) {
+            var rojo = pixeles[i];
+            var verde = pixeles[i + 1];
+            var azul = pixeles[i + 2];
+            var alpha = pixeles[i + 3]
+
+
+            var gris = (rojo + verde + azul) / 3;
+            pixeles[i] = gris;
+            pixeles[i+1] = gris;
+            pixeles[i+2] = gris;
+
+        }
+
+        ctx.putImageData(imgData, 0, 0)
+    }
+
+    function convolucionar(canvasFuente, canvasDestino) {
+        
+        var ctxFuente = canvasFuente.getContext("2d");
+        var imgDataFuente = ctxFuente.getImageData(0, 0, canvasFuente.width, canvasFuente.height)
+        var pixelesFuente = imgDataFuente.data;
+
+        canvasDestino.height = canvasFuente.height;
+        canvasDestino.width = canvasFuente.width;
+
+        var ctxDestino = canvasDestino.getContext("2d");
+        var imgDataDestino = ctxDestino.getImageData(0, 0, canvasDestino.width, canvasDestino.height)
+        var pixelesDestino = imgDataDestino.data;
+
+
+        //deteccion de bordes
+        var kernel = [
+            [-1, -1, -1],
+            [-1, 8, -1],
+            [-1, -1, -1],
+        ];
+/* 
+        var kernel = [
+            [1, 0, -1],
+            [0, 0, 0],
+            [-1, 0, 1],
+        ];
+
+        var kernel = [
+            [0, 1, 0],
+            [1, -4, 1],
+            [0, 1, 0],
+        ]; */
+
+        //enfoque
+        /* var kernel = [
+            [0, -1, 0],
+            [-1, 5, -1],
+            [0, -1, 0],
+        ]; */
+
+        //Identidad
+        /* var kernel = [
+            [0, 0, 0],
+            [0, 1, 0],
+            [0, 0, 0],
+        ]; */
+
+        var sobelVertical = [
+            [-1, 0, 1],
+            [2, 0, 2],
+            [-1, 0, 1],
+        ];
+
+        var sobelHorizontal = [
+            [-1, 2, -1],
+            [0, 0, 0],
+            [1, 2, 1],
+        ];
+
+        for (let y = 1; y < canvasFuente.height - 1; y++) {
+            for (let x = 1; x < canvasFuente.width - 1; x++) {
+
+                //REpetir canvas
+                //obtener el indice en javascript
+                var idx = (( y * canvasFuente.width ) + x ) * 4;
+                /*pixelesDestino[idx] = pixelesFuente[idx]; //rojo
+                pixelesDestino[idx + 1] = pixelesFuente[idx + 1];  //verde
+                pixelesDestino[idx + 2] = pixelesFuente[idx + 2];  //azul
+                pixelesDestino[idx + 3] = pixelesFuente[idx + 3]; //alpha */
+
+
+                 //Kerner Regular   
+                /* var casilla1 = kernel[0][0] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casilla2 = kernel[0][1] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x)) * 4)];
+                var casilla3 = kernel[0][2] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x + 1)) * 4)];
+                var casilla4 = kernel[1][0] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casilla5 = kernel[1][1] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x)) * 4)];
+                var casilla6 = kernel[1][2] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x + 1)) * 4)];
+                var casilla7 = kernel[2][0] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casilla8 = kernel[2][1] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x)) * 4)];
+                var casilla9 = kernel[2][2] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x + 1)) * 4)];
+
+                var resultado = casilla1 + casilla2 + casilla3 + casilla4 + casilla5 
+                + casilla6 +casilla7 + casilla8 + casilla9;
+
+                pixelesDestino[idx] = resultado; //rojo
+                pixelesDestino[idx + 1] = resultado;  //verde
+                pixelesDestino[idx + 2] = resultado;  //azul
+                pixelesDestino[idx + 3] = 255 //alpha
+                */
+
+
+                 /* //Kerner Sobel Vertical
+                var casillay1 = sobelVertical[0][0] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casillay2 = sobelVertical[0][1] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x)) * 4)];
+                var casillay3 = sobelVertical[0][2] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x + 1)) * 4)];
+                var casillay4 = sobelVertical[1][0] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casillay5 = sobelVertical[1][1] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x)) * 4)];
+                var casillay6 = sobelVertical[1][2] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x + 1)) * 4)];
+                var casillay7 = sobelVertical[2][0] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casillay8 = sobelVertical[2][1] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x)) * 4)];
+                var casillay9 = sobelVertical[2][2] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x + 1)) * 4)];
+
+                var resultadoy = casillay1 + casillay2 + casillay3 + casillay4 + casillay5 
+                + casillay6 +casillay7 + casillay8 + casillay9;
+
+                
+
+                pixelesDestino[idx] = resultadoy; //rojo
+                pixelesDestino[idx + 1] = resultadoy;  //verde
+                pixelesDestino[idx + 2] = resultadoy;  //azul
+                pixelesDestino[idx + 3] = 255 //alpha  
+
+
+                //Kerner Sobel Horizaontal
+                var casillax1 = sobelHorizontal[0][0] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casillax2 = sobelHorizontal[0][1] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x)) * 4)];
+                var casillax3 = sobelHorizontal[0][2] * pixelesFuente[(((( y - 1 ) * canvasFuente.width ) + (x + 1)) * 4)];
+                var casillax4 = sobelHorizontal[1][0] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casillax5 = sobelHorizontal[1][1] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x)) * 4)];
+                var casillax6 = sobelHorizontal[1][2] * pixelesFuente[(((( y ) * canvasFuente.width ) + (x + 1)) * 4)];
+                var casillax7 = sobelHorizontal[2][0] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x - 1)) * 4)];
+                var casillax8 = sobelHorizontal[2][1] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x)) * 4)];
+                var casillax9 = sobelHorizontal[2][2] * pixelesFuente[(((( y + 1 ) * canvasFuente.width ) + (x + 1)) * 4)];
+
+                var resultadox = casillax1 + casillax2 + casillax3 + casillax4 + casillax5 
+                + casillax6 +casillax7 + casillax8 + casillax9;
+
+                var mag = Math.sqrt((resultadox * resultadox)+(resultadoy * resultadoy)) */
+
+
+
+                var totalX = 0;
+                var totalY = 0;
+
+                for (let kernelY = 0; kernelY < 3;  kernelY++) {
+                    for (let kernelX = 0; kernelX < 3;  kernelX++) {
+
+                        totalY += sobelVertical[kernelY][kernelX] * pixelesFuente[(((( y + (kernelY -1) )
+                         * canvasFuente.width ) + (x + (kernelX - 1))) * 4)];
+
+                        totalX += sobelHorizontal[kernelY][kernelX] * pixelesFuente[(((( y + (kernelY -1) )
+                         * canvasFuente.width ) + (x + (kernelX - 1))) * 4)];
+                    }
+                    
+                }
+
+                var mag = Math.sqrt((totalX * totalX)+(totalY * totalY));
+                mag = (mag < 40) ? 0 : mag;
+
+                pixelesDestino[idx] = mag; //rojo
+                pixelesDestino[idx + 1] = mag;  //verde
+                pixelesDestino[idx + 2] = mag;  //azul
+                pixelesDestino[idx + 3] = 255 //alpha
+            }
+        }
+        ctxDestino.putImageData(imgDataDestino, 0, 0)
+    }
+
+    </script>
+</body>
+</html>
